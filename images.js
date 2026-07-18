@@ -1,0 +1,2 @@
+window.SLIDESHOW_IMAGES = [
+];
