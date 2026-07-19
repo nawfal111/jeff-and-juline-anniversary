@@ -376,14 +376,15 @@ function spawnHeart(){
     wob: Math.random()*Math.PI*2
   });
 }
-function drawHeart(x,y,s,color,alpha){
-  hctx.save(); hctx.translate(x,y); hctx.scale(s/16,s/16);
-  hctx.beginPath();
-  hctx.moveTo(0,5);
-  hctx.bezierCurveTo(0,2,-8,-4,-8,2); hctx.bezierCurveTo(-8,7,0,10,0,14);
-  hctx.bezierCurveTo(0,10,8,7,8,2); hctx.bezierCurveTo(8,-4,0,2,0,5);
-  hctx.fillStyle = `rgba(${color},${alpha})`; hctx.fill(); hctx.restore();
+function pathHeart(ctx,x,y,s,color,alpha){
+  ctx.save(); ctx.translate(x,y); ctx.scale(s/16,s/16);
+  ctx.beginPath();
+  ctx.moveTo(0,5);
+  ctx.bezierCurveTo(0,2,-8,-4,-8,2); ctx.bezierCurveTo(-8,7,0,10,0,14);
+  ctx.bezierCurveTo(0,10,8,7,8,2); ctx.bezierCurveTo(8,-4,0,2,0,5);
+  ctx.fillStyle = `rgba(${color},${alpha})`; ctx.fill(); ctx.restore();
 }
+function drawHeart(x,y,s,color,alpha){ pathHeart(hctx,x,y,s,color,alpha); }
 function heartLoop(){
   hctx.clearRect(0,0,innerWidth,innerHeight);
   if(hearts.length < 26 && Math.random() < .1) spawnHeart();
@@ -419,8 +420,29 @@ function confettiLoop(){
     cctx.globalAlpha = Math.min(1, p.life/50);
     cctx.fillStyle = p.c; cctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); cctx.restore();
   });
+  tapHearts = tapHearts.filter(h => h.life-- > 0);
+  tapHearts.forEach(h=>{
+    h.y -= h.v; h.wob += .08; h.x += h.drift + Math.sin(h.wob)*.8; h.s *= .997;
+    pathHeart(cctx, h.x, h.y, h.s, h.hue, .9 * Math.min(1, h.life/40));
+  });
   requestAnimationFrame(confettiLoop);
 }
+
+/* ═══════════ TAP / CLICK HEARTS ═══════════ */
+let tapHearts = [];
+function heartsAt(x, y){
+  const n = 6 + Math.floor(Math.random()*4);
+  for(let i=0;i<n;i++){
+    tapHearts.push({
+      x: x + (Math.random()-.5)*36, y: y + (Math.random()-.5)*24,
+      s: 10 + Math.random()*16, v: .9 + Math.random()*1.8,
+      drift: (Math.random()-.5)*1.4, wob: Math.random()*Math.PI*2,
+      hue: Math.random() < .5 ? "232,195,126" : "255,126,176",
+      life: 80 + Math.random()*50
+    });
+  }
+}
+addEventListener("pointerdown", e => heartsAt(e.clientX, e.clientY), {passive:true});
 
 function initCanvases(){ sizeCanvas(hc); sizeCanvas(cc); }
 addEventListener("resize", initCanvases);
@@ -434,6 +456,30 @@ const io = new IntersectionObserver(es=>es.forEach(e=>{
   if(e.isIntersecting){ e.target.classList.add("on"); io.unobserve(e.target); }
 }),{threshold:.15});
 document.querySelectorAll(".reveal").forEach(el=>io.observe(el));
+
+/* ═══════════ CINEMATIC AUTO-SCROLL ON OPEN ═══════════
+   After the hero animations play, the page glides down to the end by itself.
+   The moment they touch, scroll, or press a key, it hands control back. */
+let autoScrolling = false, autoRaf;
+function stopAutoScroll(){ autoScrolling = false; cancelAnimationFrame(autoRaf); }
+["wheel","touchstart","pointerdown","keydown"].forEach(ev =>
+  addEventListener(ev, stopAutoScroll, {passive:true}));
+setTimeout(()=>{
+  autoScrolling = true;
+  const from = scrollY;
+  const to = document.documentElement.scrollHeight - innerHeight;
+  if(to <= from){ return; }
+  const dur = Math.min(30000, Math.max(14000, (to - from) / 110 * 1000));
+  const start = performance.now();
+  function step(t){
+    if(!autoScrolling) return;
+    const p = Math.min(1, (t - start) / dur);
+    const e = p < .5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2) / 2;
+    scrollTo(0, from + (to - from) * e);
+    if(p < 1) autoRaf = requestAnimationFrame(step);
+  }
+  autoRaf = requestAnimationFrame(step);
+}, 3800);
 
 /* ═══════════ THANK YOU BUTTON ═══════════ */
 document.getElementById("thankBtn").addEventListener("click", e=>{
