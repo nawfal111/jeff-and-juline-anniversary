@@ -972,34 +972,75 @@
         tapHearts = tapHearts.filter((h) => h.life-- > 0);
         tapHearts.forEach((h) => {
           h.y -= h.v;
-          h.wob += 0.08;
-          h.x += h.drift + Math.sin(h.wob) * 0.8;
-          h.s *= 0.997;
-          pathHeart(cctx, h.x, h.y, h.s, h.hue, 0.9 * Math.min(1, h.life / 40));
+          h.wob += 0.1;
+          h.x += Math.sin(h.wob) * 0.6;
+          cctx.save();
+          cctx.globalAlpha = Math.min(1, h.life / 30);
+          cctx.font = `${h.s}px serif`;
+          cctx.textAlign = "center";
+          cctx.fillText(h.char, h.x, h.y);
+          cctx.restore();
         });
         requestAnimationFrame(confettiLoop);
       }
 
-      /* ═══════════ TAP / CLICK HEARTS ═══════════ */
+      /* ═══════════ TOUCH HEARTS ═══════════
+         Small heart emojis pop exactly where the finger touches,
+         and keep trailing under it while they scroll. */
       let tapHearts = [];
-      function heartsAt(x, y) {
-        const n = 6 + Math.floor(Math.random() * 4);
+      const HEART_EMOJIS = ["❤️", "💛", "💖", "💕", "🧡"];
+      function heartsAt(x, y, n) {
         for (let i = 0; i < n; i++) {
           tapHearts.push({
-            x: x + (Math.random() - 0.5) * 36,
-            y: y + (Math.random() - 0.5) * 24,
-            s: 10 + Math.random() * 16,
-            v: 0.9 + Math.random() * 1.8,
-            drift: (Math.random() - 0.5) * 1.4,
+            x: x + (Math.random() - 0.5) * 14,
+            y: y + (Math.random() - 0.5) * 10,
+            s: 12 + Math.random() * 8,
+            v: 0.7 + Math.random() * 1.1,
             wob: Math.random() * Math.PI * 2,
-            hue: Math.random() < 0.5 ? "232,195,126" : "255,126,176",
-            life: 80 + Math.random() * 50,
+            char: HEART_EMOJIS[(Math.random() * HEART_EMOJIS.length) | 0],
+            life: 60 + Math.random() * 30,
           });
         }
       }
-      addEventListener("pointerdown", (e) => heartsAt(e.clientX, e.clientY), {
+      let touching = false,
+        lastHeart = 0;
+      function trailHeart(x, y) {
+        const now = performance.now();
+        if (now - lastHeart > 70) {
+          lastHeart = now;
+          heartsAt(x, y, 1);
+        }
+      }
+      addEventListener(
+        "pointerdown",
+        (e) => {
+          touching = true;
+          heartsAt(e.clientX, e.clientY, 2);
+        },
+        { passive: true },
+      );
+      addEventListener("pointerup", () => (touching = false), {
         passive: true,
       });
+      addEventListener("pointercancel", () => (touching = false), {
+        passive: true,
+      });
+      addEventListener(
+        "pointermove",
+        (e) => {
+          if (touching) trailHeart(e.clientX, e.clientY);
+        },
+        { passive: true },
+      );
+      /* touchmove keeps firing while the page scrolls (pointer events don't) */
+      addEventListener(
+        "touchmove",
+        (e) => {
+          const t = e.touches[0];
+          if (t) trailHeart(t.clientX, t.clientY);
+        },
+        { passive: true },
+      );
 
       function initCanvases() {
         sizeCanvas(hc);
