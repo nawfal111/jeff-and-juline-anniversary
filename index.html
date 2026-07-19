@@ -485,9 +485,19 @@ function initCanvases(){ sizeCanvas(hc); sizeCanvas(cc); }
 addEventListener("resize", initCanvases);
 initCanvases(); heartLoop(); confettiLoop();
 
-/* ═══════════ ROMANTIC MUSIC (generated live — no file needed) ═══════════ */
+/* ═══════════ MUSIC ═══════════
+   Plays osg_E_102.mp3 on loop; falls back to a live-generated
+   music-box melody if the file can't load. */
 let musicOn = false;
 function startMusic(){
+  if(musicOn) return; musicOn = true;
+  const song = new Audio("osg_E_102.mp3");
+  song.loop = true;
+  song.volume = .85;
+  song.play().catch(()=>{ musicOn = false; startGeneratedMusic(); });
+  song.addEventListener("error", ()=>{ musicOn = false; startGeneratedMusic(); });
+}
+function startGeneratedMusic(){
   if(musicOn) return; musicOn = true;
   const ac = new (window.AudioContext || window.webkitAudioContext)();
   const master = ac.createGain(); master.gain.value = .16; master.connect(ac.destination);
