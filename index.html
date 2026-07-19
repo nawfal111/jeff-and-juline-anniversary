@@ -429,12 +429,11 @@
         z-index: 5;
         width: 52px;
         height: 52px;
-        border-radius: 50%;
-        border: 1px solid var(--glass-border);
-        background: rgba(13, 10, 26, 0.5);
-        backdrop-filter: blur(8px);
+        border: none;
+        background: none;
         color: #ffe9c4;
-        font-size: 1.5rem;
+        font-size: 2.2rem;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
         cursor: pointer;
         transition: 0.3s;
         display: flex;
@@ -442,8 +441,8 @@
         justify-content: center;
       }
       .nav-btn:hover {
-        background: rgba(232, 195, 126, 0.25);
-        transform: translateY(-50%) scale(1.1);
+        color: var(--gold-bright);
+        transform: translateY(-50%) scale(1.2);
       }
       .nav-btn.prev {
         left: 1rem;
