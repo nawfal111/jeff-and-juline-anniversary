@@ -348,7 +348,6 @@ async function buildSlideshow(){
       d.innerHTML = `<div class="placeholder"><div class="big">${p.emoji}</div><div class="cap">${p.cap}</div></div>`;
       show.appendChild(d);
     });
-    note.textContent = "Drop your photos into the “images” folder and refresh — they'll appear here automatically ✨";
   }
   slides = [...show.querySelectorAll(".slide")];
   slides.forEach((_,i)=>{
