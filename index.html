@@ -862,6 +862,11 @@
       function sizeCanvas(c) {
         c.width = innerWidth * devicePixelRatio;
         c.height = innerHeight * devicePixelRatio;
+        /* display size must stay in CSS pixels, otherwise the
+           device-pixel backing store stretches past the viewport
+           and everything draws shifted toward the bottom-right */
+        c.style.width = innerWidth + "px";
+        c.style.height = innerHeight + "px";
         c.getContext("2d").setTransform(
           devicePixelRatio,
           0,
