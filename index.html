@@ -1106,7 +1106,6 @@
           burst(innerWidth * 0.3, innerHeight * 0.35, 90);
           burst(innerWidth * 0.7, innerHeight * 0.3, 90);
         }, 900);
-        setTimeout(startAutoScroll, 3800);
       });
 
       /* ═══════════ SCROLL REVEAL ═══════════ */
@@ -1121,40 +1120,6 @@
         { threshold: 0.15 },
       );
       document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
-
-      /* ═══════════ CINEMATIC AUTO-SCROLL ON OPEN ═══════════
-   After the hero animations play, the page glides down to the end by itself.
-   The moment they touch, scroll, or press a key, it hands control back. */
-      let autoScrolling = false,
-        autoRaf;
-      function stopAutoScroll() {
-        autoScrolling = false;
-        cancelAnimationFrame(autoRaf);
-      }
-      ["wheel", "touchstart", "pointerdown", "keydown"].forEach((ev) =>
-        addEventListener(ev, stopAutoScroll, { passive: true }),
-      );
-      function startAutoScroll() {
-        autoScrolling = true;
-        const from = scrollY;
-        const to = document.documentElement.scrollHeight - innerHeight;
-        if (to <= from) {
-          return;
-        }
-        const dur = Math.min(
-          30000,
-          Math.max(14000, ((to - from) / 110) * 1000),
-        );
-        const start = performance.now();
-        function step(t) {
-          if (!autoScrolling) return;
-          const p = Math.min(1, (t - start) / dur);
-          const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-          scrollTo(0, from + (to - from) * e);
-          if (p < 1) autoRaf = requestAnimationFrame(step);
-        }
-        autoRaf = requestAnimationFrame(step);
-      }
 
       /* ═══════════ THANK YOU BUTTON ═══════════ */
       document.getElementById("thankBtn").addEventListener("click", (e) => {
