@@ -213,9 +213,47 @@
     text-align:center;padding:3rem 1rem 4rem;color:#8d8168;font-size:1rem;letter-spacing:.05em;
   }
   footer .heart{color:var(--rose);display:inline-block;animation:heartbeat 2.2s infinite}
+
+  /* ── welcome overlay ── */
+  #welcome{
+    position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+    padding:1.5rem;text-align:center;
+    background:radial-gradient(900px 600px at 50% 30%, #2b1650 0%, rgba(13,10,26,.98) 75%), var(--deep);
+    transition:opacity 1.1s ease, visibility 1.1s;
+  }
+  #welcome.gone{opacity:0;visibility:hidden;pointer-events:none}
+  .welcome-card{max-width:34rem}
+  .welcome-card .icon{
+    font-size:clamp(3rem,10vw,4.5rem);display:inline-block;
+    animation:heartbeat 2.2s ease-in-out infinite;
+    filter:drop-shadow(0 6px 24px rgba(232,195,126,.4));
+  }
+  .welcome-card h3{
+    font-family:'Great Vibes',cursive;font-weight:400;
+    font-size:clamp(2.4rem,8vw,3.6rem);color:var(--gold-bright);
+    margin:.6rem 0 1rem;filter:drop-shadow(0 4px 18px rgba(232,195,126,.35));
+  }
+  .welcome-card p{
+    font-size:clamp(1.1rem,3.2vw,1.4rem);color:#e2d7bf;font-style:italic;
+    line-height:1.8;margin-bottom:2.2rem;
+  }
+  .welcome-card p b{color:var(--gold-bright);font-style:normal}
+  /* hold the show until they enter */
+  body.waiting{overflow:hidden}
+  body.waiting .hero *{animation-play-state:paused !important}
 </style>
 </head>
-<body>
+<body class="waiting">
+<!-- WELCOME OVERLAY -->
+<div id="welcome">
+  <div class="welcome-card">
+    <div class="icon">🔊</div>
+    <h3>Before you begin…</h3>
+    <p>Please <b>turn your sound ON</b> 🎶<br>and <b>scroll all the way to the end</b> —<br>every bit of this is for you ✨</p>
+    <button class="btn-wow" id="enterBtn">💛 I'm Ready</button>
+  </div>
+</div>
+
 <div class="bg"></div>
 <canvas id="hearts"></canvas>
 <canvas id="confetti"></canvas>
@@ -447,8 +485,54 @@ function initCanvases(){ sizeCanvas(hc); sizeCanvas(cc); }
 addEventListener("resize", initCanvases);
 initCanvases(); heartLoop(); confettiLoop();
 
-/* welcome burst */
-setTimeout(()=>{ burst(innerWidth*.3, innerHeight*.35, 90); burst(innerWidth*.7, innerHeight*.3, 90); }, 900);
+/* ═══════════ ROMANTIC MUSIC (generated live — no file needed) ═══════════ */
+let musicOn = false;
+function startMusic(){
+  if(musicOn) return; musicOn = true;
+  const ac = new (window.AudioContext || window.webkitAudioContext)();
+  const master = ac.createGain(); master.gain.value = .16; master.connect(ac.destination);
+  const echo = ac.createDelay(1); echo.delayTime.value = .34;
+  const fb = ac.createGain(); fb.gain.value = .3;
+  echo.connect(fb); fb.connect(echo); echo.connect(master);
+  function note(freq, t, dur, vol, type){
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type || "sine"; o.frequency.value = freq;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + .025);
+    g.gain.exponentialRampToValueAtTime(.0008, t + dur);
+    o.connect(g); g.connect(master); g.connect(echo);
+    o.start(t); o.stop(t + dur + .1);
+  }
+  /* Pachelbel's Canon progression, played like a gentle music box */
+  const chords = [
+    [293.66,369.99,440],[220,277.18,329.63],[246.94,293.66,369.99],[184.99,220,277.18],
+    [196,246.94,293.66],[146.83,184.99,220],[196,246.94,293.66],[220,277.18,329.63]
+  ];
+  const bass = [146.83,110,123.47,92.5,98,146.83,98,110];
+  const step = .3, perBar = 8, arp = [0,1,2,1,2,0,1,2];
+  let bar = 0, nextT = ac.currentTime + .1;
+  function schedule(){
+    while(nextT < ac.currentTime + 3){
+      const ch = chords[bar % chords.length];
+      note(bass[bar % bass.length], nextT, step*perBar, .45, "triangle");
+      for(let i = 0; i < perBar; i++){
+        note(ch[arp[i]] * 2, nextT + i*step, 1.5, .2);
+        if(i % 4 === 0) note(ch[(i/4) % 3] * 4, nextT + i*step, 1.2, .08);
+      }
+      nextT += step*perBar; bar++;
+    }
+  }
+  schedule(); setInterval(schedule, 1000);
+}
+
+/* ═══════════ WELCOME OVERLAY ═══════════ */
+document.getElementById("enterBtn").addEventListener("click", ()=>{
+  document.getElementById("welcome").classList.add("gone");
+  document.body.classList.remove("waiting");
+  startMusic();
+  setTimeout(()=>{ burst(innerWidth*.3, innerHeight*.35, 90); burst(innerWidth*.7, innerHeight*.3, 90); }, 900);
+  setTimeout(startAutoScroll, 3800);
+});
 
 /* ═══════════ SCROLL REVEAL ═══════════ */
 const io = new IntersectionObserver(es=>es.forEach(e=>{
@@ -463,7 +547,7 @@ let autoScrolling = false, autoRaf;
 function stopAutoScroll(){ autoScrolling = false; cancelAnimationFrame(autoRaf); }
 ["wheel","touchstart","pointerdown","keydown"].forEach(ev =>
   addEventListener(ev, stopAutoScroll, {passive:true}));
-setTimeout(()=>{
+function startAutoScroll(){
   autoScrolling = true;
   const from = scrollY;
   const to = document.documentElement.scrollHeight - innerHeight;
@@ -478,7 +562,7 @@ setTimeout(()=>{
     if(p < 1) autoRaf = requestAnimationFrame(step);
   }
   autoRaf = requestAnimationFrame(step);
-}, 3800);
+}
 
 /* ═══════════ THANK YOU BUTTON ═══════════ */
 document.getElementById("thankBtn").addEventListener("click", e=>{
